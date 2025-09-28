@@ -1,0 +1,62 @@
+{
+  "kind": "collectionType",
+  "collectionName": "orders",
+  "info": {
+    "singularName": "order",
+    "pluralName": "orders",
+    "displayName": "Order"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "client": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::client.client",
+      "inversedBy": "orders"
+    },
+    "car": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::car.car",
+      "inversedBy": "cars"
+    },
+    "orderstatus": {
+      "type": "enumeration",
+      "enum": [
+        "new",
+        "in_progress",
+        "suspended",
+        "completed",
+        "cancelled",
+        "deleted"
+      ]
+    },
+    "works": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::work.work",
+      "mappedBy": "order"
+    },
+    "estimatedCost": {
+      "type": "decimal"
+    },
+    "finalCost": {
+      "type": "decimal"
+    },
+    "notes": {
+      "type": "text"
+    },
+    "description": {
+      "type": "text"
+    },
+    "parts": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::part.part",
+      "mappedBy": "order"
+    }
+  }
+}

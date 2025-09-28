@@ -1,0 +1,122 @@
+# Для ускорения сборки используйте:
+
+# COMPOSE_DOCKER_CLI_BUILD=1 DOCKER_BUILDKIT=1 docker compose -f 'docker-compose.yml' up -d --build 
+services:
+
+  admin-front:
+    build:
+      context: ./admin-front
+      args:
+        - VITE_PORT=1100
+        - VITE_STRAPI_URL=${VITE_STRAPI_URL}
+        - VITE_ALLOWED_HOSTS=${VITE_ALLOWED_HOSTS}
+        - VITE_ADMIN_FRONTEND_URL=${VITE_ADMIN_FRONTEND_URL}
+        - VITE_MAIN_URL=${VITE_MAIN_URL}
+        - VITE_API_URL=${VITE_API_URL}
+        - CORS_ORIGIN=${CORS_ORIGIN}
+        - VITE_SHARE_SALT=${VITE_SHARE_SALT}
+    container_name: autoserv-admin-front
+    ports:
+      - "1100:1100"
+    restart: unless-stopped
+    env_file:
+      - .env
+    networks:
+      - autoserv-net
+
+  main-front:
+    build:
+      context: ./main-front
+      args:
+        - VITE_PORT=1101
+        - VITE_STRAPI_URL=${VITE_STRAPI_URL}
+        - VITE_ALLOWED_HOSTS=${VITE_ALLOWED_HOSTS}
+        - VITE_MAIN_FRONTEND_URL=${VITE_MAIN_FRONTEND_URL}
+        - VITE_ADMIN_FRONTEND_URL=${VITE_ADMIN_FRONTEND_URL}
+        - VITE_IN_FRONTEND_URL=${VITE_IN_FRONTEND_URL}
+        - VITE_API_URL=${VITE_API_URL}
+        - VITE_SHARE_SALT=${VITE_SHARE_SALT}
+    container_name: autoserv-main-front
+    ports:
+      - "1101:1101"
+    restart: unless-stopped
+    env_file:
+      - .env
+    networks:
+      - autoserv-net
+
+  in-front:
+    build:
+      context: ./in-front
+      args:
+        - VITE_PORT=1102
+        - VITE_STRAPI_URL=${VITE_STRAPI_URL}
+        - VITE_ALLOWED_HOSTS=${VITE_ALLOWED_HOSTS}
+        - VITE_IN_FRONTEND_URL=${VITE_IN_FRONTEND_URL}
+        - VITE_ADMIN_FRONTEND_URL=${VITE_ADMIN_FRONTEND_URL}
+        - VITE_MAIN_URL=${VITE_MAIN_URL}
+        - VITE_API_URL=${VITE_API_URL}
+        - CORS_ORIGIN=${CORS_ORIGIN}
+    container_name: autoserv-in-front
+    ports:
+      - "1102:1102"
+    restart: unless-stopped
+    env_file:
+      - .env
+    networks:
+      - autoserv-net
+
+  strapi:
+    build:
+      context: ./strapi
+      dockerfile: Dockerfile
+      args:
+        - NODE_ENV=${NODE_ENV}
+        - PORT=${PORT}
+        - DATABASE_CLIENT=${DATABASE_CLIENT}
+        - DATABASE_HOST=${DATABASE_HOST}
+        - DATABASE_PORT=${DATABASE_PORT}
+        - DATABASE_NAME=${DATABASE_NAME}
+        - DATABASE_USERNAME=${DATABASE_USERNAME}
+        - DATABASE_PASSWORD=${DATABASE_PASSWORD}
+        - JWT_SECRET=${JWT_SECRET}
+        - ADMIN_JWT_SECRET=${ADMIN_JWT_SECRET}
+        - APP_KEYS=${APP_KEYS}
+        - VITE_STRAPI_URL=${VITE_STRAPI_URL}
+        - VITE_ALLOWED_HOSTS=${VITE_ALLOWED_HOSTS}
+        - VITE_IN_FRONTEND_URL=${VITE_IN_FRONTEND_URL}
+        - VITE_ADMIN_FRONTEND_URL=${VITE_ADMIN_FRONTEND_URL}
+        - VITE_MAIN_URL=${VITE_MAIN_URL}
+        - VITE_API_URL=${VITE_API_URL}
+        - CORS_ORIGIN=${CORS_ORIGIN}
+        - VITE_SHARE_SALT=${VITE_SHARE_SALT}
+    container_name: autoserv-strapi
+    ports:
+      - "1103:1103"
+    volumes:
+      - ./strapi/database:/opt/app/database
+      - ./strapi/public:/opt/app/public
+    restart: unless-stopped
+    env_file:
+      - .env
+    networks:
+      - autoserv-net
+
+  nodered:
+    image: nodered/node-red:latest
+    container_name: autoserv-nodered
+    ports:
+      - "1880:1880"
+    volumes:
+      - ./node-red:/data
+    env_file:
+      - .env
+    restart: unless-stopped
+    user: "1000:1000"
+    networks:
+      - autoserv-net
+
+
+networks:
+  autoserv-net:
+    driver: bridge

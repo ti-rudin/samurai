@@ -1,0 +1,1719 @@
+[
+    {
+        "id": "c18759d07acde4e0",
+        "type": "tab",
+        "label": "Поток 1",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "a1b2c3d4.56789",
+        "type": "tab",
+        "label": "Автосервис Бот",
+        "disabled": true,
+        "info": ""
+    },
+    {
+        "id": "20f6c1bd3005a766",
+        "type": "tab",
+        "label": "Автосервис Бот",
+        "disabled": true,
+        "info": ""
+    },
+    {
+        "id": "d1b2c3d4e5f67890",
+        "type": "tab",
+        "label": "HTTP Request Test",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "12345678.90abcd",
+        "type": "telegram bot",
+        "botname": "Автосервис Бот",
+        "usernames": "",
+        "chatids": "",
+        "baseapiurl": "",
+        "testenvironment": false,
+        "pollinterval": "300",
+        "usesocks": false,
+        "sockshost": "",
+        "socksport": "",
+        "socksusername": "",
+        "sockspassword": "",
+        "bothost": "",
+        "botpath": "",
+        "localbothost": "",
+        "localbotport": "",
+        "publicbotport": "",
+        "privatekey": "",
+        "certificate": "",
+        "useselfsignedcertificate": false,
+        "sslterminated": false,
+        "verboselogging": false
+    },
+    {
+        "id": "46d9409b7f17579f",
+        "type": "http in",
+        "z": "c18759d07acde4e0",
+        "name": "",
+        "url": "/ai-opis",
+        "method": "post",
+        "upload": false,
+        "skipBodyParsing": false,
+        "swaggerDoc": "",
+        "x": 110,
+        "y": 100,
+        "wires": [
+            [
+                "7b2b03b1586d15b6",
+                "8c9726728262bd4d"
+            ]
+        ]
+    },
+    {
+        "id": "32ff0fab3eb4644a",
+        "type": "http response",
+        "z": "c18759d07acde4e0",
+        "name": "",
+        "statusCode": "200",
+        "headers": {},
+        "x": 120,
+        "y": 160,
+        "wires": []
+    },
+    {
+        "id": "7b2b03b1586d15b6",
+        "type": "function",
+        "z": "c18759d07acde4e0",
+        "name": "Подготовка запроса к Yandex GPT",
+        "func": "// Конфигурационные параметры\nconst FOLDER_ID = env.get('YANDEX_GPT_FOLDER_ID');\nconst IAM_TOKEN = flow.get('iamToken');\n// Формируем тело запроса для Yandex GPT API\n\nmsg = {\n\n  payload: {\n    \"modelUri\": `gpt://${FOLDER_ID}/yandexgpt/latest`,\n    \"jsonObject\": true,\n    \"completionOptions\": {\n      \"maxTokens\": 2000,\n      \"temperature\": 0.3\n    },\n    \"messages\": [\n      {\n        \"role\": \"system\",\n        \"text\": \"Ты — AI-ассистент автосервиса «Автоклуб Самурай». Твоя роль — формировать детализированные JSON-ответы по заявкам на ремонт автомобилей. \\n\\nИнструкции:\\n\\n1. **Структура ответа**: Всегда возвращай ответ в формате JSON, содержащий следующие разделы:\\n   - works: основные работы\\n   - parts: необходимые запчасти\\n   - recommendedWorks: рекомендуемые работы\\n   - recommendedParts: рекомендуемые запчасти\\n   - notes: технические примечания\\n\\n2. **Формат данных**:\\n   - Для работ: название, описание, стоимость, статус (всегда «pending»), флаг рекомендации\\n   - Для запчастей: номер, название, количество, цена (всегда 0), статус (всегда «pending_from_client»), флаг рекомендации\\n   - В описании работ детализируй ключевые этапы\\n   - Указывай 0000 поле number \\n\\n3. **Расчет стоимости**:\\n   найди информацию о нормо-часах (с точностью до 15 мин) по видам работ и умножь на почасовую ставку- Ставка: 1200 руб./час)\\n если информации о норме-часах нет, ищи среднерыночную стоимость работы\\n  - Для запчастей указывай 0000\\n\\n4. **Технические детали**:\\n    - Добавляй особенности для марки/модели авто\\n   - В notes включай важные для клиента технические примечания\\n\\n5. **Рекомендации**:\\n   - В recommendedWorks включай сопутствующие и превентивные работы\\n   - В recommendedParts — расходники и смежные запчасти\\n   - Все рекомендации помечай isRecomended: true\\n\\n6. **Стиль**:\\n   - Профессиональный технический язык, заменяй слэнговые названия на нормальные \\n   - Четкие формулировки без лишних слов\\n   - Без гарантий, скидок, маркетинговых фраз\\n\\nПример вывода:\\n{\\n  \\\"works\\\": [{\\\"name\\\": \\\"...\\\", \\\"description\\\": \\\"...\\\", \\\"cost\\\": 1000, \\\"status_of_work\\\": \\\"pending\\\", \\\"isRecomended\\\": false}],\\n  \\\"parts\\\": [{\\\"number\\\": \\\"...\\\", \\\"name\\\": \\\"...\\\", \\\"quantity\\\": 1, \\\"price\\\": 2000, \\\"partstatus\\\": \\\"need_to_order\\\", \\\"isRecomended\\\": false}],\\n  \\\"recommendedWorks\\\": [...],\\n  \\\"recommendedParts\\\": [...],\\n  \\\"notes\\\": \\\"...\\\"\\n}\\n\\n\"\n      },\n      {\n        \"role\": \"user\",\n        \"text\": \"Автомобиль - \" + msg.payload.car.make + \" \"+ msg.payload.car.model + \" \" + msg.payload.description\n      }\n    ]\n  },\n\n\n  headers: {\n    \"Content-Type\": \"application/json\",\n    \"Authorization\": `Bearer ${IAM_TOKEN}`,\n    \"x-folder-id\": FOLDER_ID\n  },\n  res: msg.res,\n  req: msg.req\n}\n\n\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 370,
+        "y": 100,
+        "wires": [
+            [
+                "79f6c84d9e59ac2c"
+            ]
+        ]
+    },
+    {
+        "id": "79f6c84d9e59ac2c",
+        "type": "http request",
+        "z": "c18759d07acde4e0",
+        "name": "Запрос к Yandex GPT API",
+        "method": "POST",
+        "ret": "json",
+        "paytoqs": "ignore",
+        "url": "https://llm.api.cloud.yandex.net/foundationModels/v1/completion",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 680,
+        "y": 100,
+        "wires": [
+            [
+                "4b49d67519515950",
+                "3449c506d1b4d12c"
+            ]
+        ]
+    },
+    {
+        "id": "9d6b1ed1fb3f7992",
+        "type": "function",
+        "z": "c18759d07acde4e0",
+        "name": "обработка ответа",
+        "func": "//  const response = JSON.parse(msg.payload);\n//msg.payload = response.result?.alternatives?.[0]?.message?.text?.replace(/```/g, '').trim();\n\n\n//onst response = JSON.parse(msg.payload);\nconst response2 = msg.payload.result?.alternatives?.[0]?.message?.text;\nmsg.payload = JSON.parse(response2)\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1070,
+        "y": 100,
+        "wires": [
+            [
+                "32ff0fab3eb4644a"
+            ]
+        ]
+    },
+    {
+        "id": "4b49d67519515950",
+        "type": "json",
+        "z": "c18759d07acde4e0",
+        "name": "",
+        "property": "payload",
+        "action": "",
+        "pretty": false,
+        "x": 890,
+        "y": 100,
+        "wires": [
+            [
+                "9d6b1ed1fb3f7992"
+            ]
+        ]
+    },
+    {
+        "id": "3449c506d1b4d12c",
+        "type": "debug",
+        "z": "c18759d07acde4e0",
+        "name": "debug 2",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 900,
+        "y": 40,
+        "wires": []
+    },
+    {
+        "id": "6cad9ff9aef963d8",
+        "type": "inject",
+        "z": "c18759d07acde4e0",
+        "name": "",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "39600",
+        "crontab": "",
+        "once": true,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 110,
+        "y": 600,
+        "wires": [
+            [
+                "98449c58da5eb596"
+            ]
+        ]
+    },
+    {
+        "id": "98449c58da5eb596",
+        "type": "function",
+        "z": "c18759d07acde4e0",
+        "name": "Получение IAM токена",
+        "func": "// Получаем токен из переменной окружения\nconst oauthToken = env.get('YANDEX_PASSPORT_OAUTH_TOKEN');\n\n// Формируем тело запроса\nmsg.payload = {\n    \"yandexPassportOauthToken\": oauthToken\n};\n\n// Устанавливаем заголовки\nmsg.headers = {\n    \"Content-Type\": \"application/json\"\n};\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 330,
+        "y": 600,
+        "wires": [
+            [
+                "iam_request_node",
+                "f1ae459a71b748b5"
+            ]
+        ]
+    },
+    {
+        "id": "iam_request_node",
+        "type": "http request",
+        "z": "c18759d07acde4e0",
+        "name": "IAM токен запрос",
+        "method": "POST",
+        "ret": "json",
+        "paytoqs": "ignore",
+        "url": "https://iam.api.cloud.yandex.net/iam/v1/tokens",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 570,
+        "y": 600,
+        "wires": [
+            [
+                "3d073725e82f0812"
+            ]
+        ]
+    },
+    {
+        "id": "3d073725e82f0812",
+        "type": "json",
+        "z": "c18759d07acde4e0",
+        "name": "",
+        "property": "payload",
+        "action": "",
+        "pretty": false,
+        "x": 750,
+        "y": 600,
+        "wires": [
+            [
+                "7ee2ccbbaa3ae53e"
+            ]
+        ]
+    },
+    {
+        "id": "7ee2ccbbaa3ae53e",
+        "type": "function",
+        "z": "c18759d07acde4e0",
+        "name": "flow.set(\"iamToken\", msg.payload.iamToken)",
+        "func": "flow.set(\"iamToken\", msg.payload.iamToken)\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1010,
+        "y": 600,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "e342a44592b692f7",
+        "type": "comment",
+        "z": "c18759d07acde4e0",
+        "name": "обновление токена раз в 11 часов",
+        "info": "",
+        "x": 160,
+        "y": 560,
+        "wires": []
+    },
+    {
+        "id": "39ea9e128cf1b10d",
+        "type": "http in",
+        "z": "c18759d07acde4e0",
+        "name": "",
+        "url": "/ai-pts-recognize",
+        "method": "post",
+        "upload": false,
+        "skipBodyParsing": false,
+        "swaggerDoc": "",
+        "x": 120,
+        "y": 280,
+        "wires": [
+            [
+                "cda2656eb249c551"
+            ]
+        ]
+    },
+    {
+        "id": "aa909b43669c450b",
+        "type": "http response",
+        "z": "c18759d07acde4e0",
+        "name": "",
+        "statusCode": "200",
+        "headers": {},
+        "x": 120,
+        "y": 340,
+        "wires": []
+    },
+    {
+        "id": "cda2656eb249c551",
+        "type": "function",
+        "z": "c18759d07acde4e0",
+        "name": "Подготовка запроса к Yandex GPT",
+        "func": "// Конфигурационные параметры\nconst FOLDER_ID = env.get('YANDEX_VISION_FOLDER_ID');\nconst IAM_TOKEN = flow.get('iamToken');\n\n// Предполагаем, что изображение уже закодировано в base64 и хранится в msg.payload.image\nconst imageData = msg.payload.img;\n\n// Формируем тело запроса для Yandex Vision API\nmsg.payload = {\n    \"folderId\": FOLDER_ID,\n    \"analyze_specs\": [{\n        \"content\": imageData,\n        \"features\": [{\n            \"type\": \"TEXT_DETECTION\",\n            \"text_detection_config\": {\n                \"language_codes\": [\"*\"], // Распознавание всех языков\n                \"model\": \"vehicle-registration-back\" // Указание модели для распознавания задней стороны водительских прав\n            }\n        }]\n    }]\n};\n\nmsg.headers = {\n    \"Content-Type\": \"application/json\",\n    \"Authorization\": `Bearer ${IAM_TOKEN}`\n};\n\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 410,
+        "y": 280,
+        "wires": [
+            [
+                "73bf07304c2a57ab"
+            ]
+        ]
+    },
+    {
+        "id": "73bf07304c2a57ab",
+        "type": "http request",
+        "z": "c18759d07acde4e0",
+        "name": "Запрос к Yandex GPT API",
+        "method": "POST",
+        "ret": "json",
+        "paytoqs": "ignore",
+        "url": "https://vision.api.cloud.yandex.net/vision/v1/batchAnalyze",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 720,
+        "y": 280,
+        "wires": [
+            [
+                "27638bfbf8d5a6d4",
+                "7201b9b195cf6f0b"
+            ]
+        ]
+    },
+    {
+        "id": "7201b9b195cf6f0b",
+        "type": "function",
+        "z": "c18759d07acde4e0",
+        "name": "обработка ответа",
+        "func": "//  const response = JSON.parse(msg.payload);\n//msg.payload = response.result?.alternatives?.[0]?.message?.text?.replace(/```/g, '').trim();\n\n\nconst response = JSON.parse(msg.payload);\nconst response2 = response.results[0]?.results[0]?.textDetection?.pages[0]?.entities\nmsg.payload = response2;\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1110,
+        "y": 280,
+        "wires": [
+            [
+                "aa909b43669c450b",
+                "9dcaebeb533dfbab"
+            ]
+        ]
+    },
+    {
+        "id": "27638bfbf8d5a6d4",
+        "type": "debug",
+        "z": "c18759d07acde4e0",
+        "name": "debug 5",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 940,
+        "y": 220,
+        "wires": []
+    },
+    {
+        "id": "9dcaebeb533dfbab",
+        "type": "debug",
+        "z": "c18759d07acde4e0",
+        "name": "debug 3",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1300,
+        "y": 280,
+        "wires": []
+    },
+    {
+        "id": "8c9726728262bd4d",
+        "type": "debug",
+        "z": "c18759d07acde4e0",
+        "name": "debug 4",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 280,
+        "y": 60,
+        "wires": []
+    },
+    {
+        "id": "f1ae459a71b748b5",
+        "type": "debug",
+        "z": "c18759d07acde4e0",
+        "name": "debug 6",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 380,
+        "y": 640,
+        "wires": []
+    },
+    {
+        "id": "f7cef455b73ef2c6",
+        "type": "telegram receiver",
+        "z": "a1b2c3d4.56789",
+        "name": "",
+        "bot": "12345678.90abcd",
+        "saveDataDir": "",
+        "filterCommands": false,
+        "x": 140,
+        "y": 120,
+        "wires": [
+            [
+                "d2b51d8dc5812b38"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "596314b0094cb77a",
+        "type": "telegram sender",
+        "z": "a1b2c3d4.56789",
+        "name": "",
+        "bot": "12345678.90abcd",
+        "haserroroutput": false,
+        "outputs": 1,
+        "x": 770,
+        "y": 80,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "22d6d8302914e2ea",
+        "type": "inject",
+        "z": "a1b2c3d4.56789",
+        "name": "Запуск",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": "",
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 140,
+        "y": 60,
+        "wires": [
+            [
+                "c4cf040c5a7416ae"
+            ]
+        ]
+    },
+    {
+        "id": "86d9b406c6068262",
+        "type": "function",
+        "z": "a1b2c3d4.56789",
+        "name": "Обработка настроек",
+        "func": "// Преобразуем массив в объект\nconst settings = {};\nmsg.payload.forEach(item => {\n    if (item.key && item.value) {\n        settings[item.key] = item.value;\n    }\n});\n\n// Сохраняем в контекст\nflow.set('settings', settings);\n\n// Возвращаем для отладки\nreturn { \n    payload: settings,\n    settings: settings // Дублируем для удобства\n};",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 550,
+        "y": 60,
+        "wires": [
+            [
+                "f0c99edd50f036ed"
+            ]
+        ]
+    },
+    {
+        "id": "f0c99edd50f036ed",
+        "type": "debug",
+        "z": "a1b2c3d4.56789",
+        "name": "Настройки",
+        "active": true,
+        "console": "false",
+        "complete": "payload",
+        "x": 770,
+        "y": 20,
+        "wires": []
+    },
+    {
+        "id": "c4cf040c5a7416ae",
+        "type": "http request",
+        "z": "a1b2c3d4.56789",
+        "name": "GET /settings",
+        "method": "GET",
+        "ret": "obj",
+        "paytoqs": "ignore",
+        "url": "http://strapi:1337/settings",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [
+            {
+                "keyType": "Authorization",
+                "keyValue": "",
+                "valueType": "other",
+                "valueValue": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiaWF0IjoxNzUyMTUzNjc4LCJleHAiOjE3NTQ3NDU2Nzh9.mUajiuHuj0l6ZmNLp9SowBTB8C_cQEvdCEDn2DXXUaY"
+            }
+        ],
+        "x": 350,
+        "y": 60,
+        "wires": [
+            [
+                "86d9b406c6068262"
+            ]
+        ]
+    },
+    {
+        "id": "987e4163e6b9a981",
+        "type": "telegram sender",
+        "z": "a1b2c3d4.56789",
+        "name": "",
+        "bot": "12345678.90abcd",
+        "haserroroutput": false,
+        "outputs": 1,
+        "x": 990,
+        "y": 380,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "1a8f14b172c279e4",
+        "type": "function",
+        "z": "a1b2c3d4.56789",
+        "name": "Создание Car Project",
+        "func": "if (msg.payload.action === \"create_car_project\") {\n    // 1. Подготовка данных для создания проекта\n    const carProjectData = {\n        \"date_start\": new Date().toISOString(),\n        \"name\": `Проект для ${msg.payload.car_number}`,\n        \"status\": \"active\",\n        \"chat_id\": msg.payload.chatId.toString(),\n        \"car\": `${msg.payload.car_number}`\n    };\n\n    // 2. Сообщение для отправки в Telegram (первый выход)\n    const telegramMsg = {\n        payload: {\n            chatId: msg.payload.chatId,\n            type: \"message\",\n            content: `✅ Создан новый проект для машины: ${msg.payload.car_number}`,\n            replyMarkup: { remove_keyboard: true }\n        }\n    };\n\n    // 3. Данные для API запроса (второй выход)\n    const apiRequestMsg = {\n        payload: carProjectData,\n        originalChatId: msg.payload.chatId,\n        headers: {\n            \"Content-Type\": \"application/json\",\n            \"Authorization\": `Bearer ${flow.get('settings').STRAPI_JWT_SECRET}`\n        }\n    };\n\n    // Возвращаем оба сообщения (используем multiple outputs)\n    return [telegramMsg, apiRequestMsg];\n    return msg;\n}\n\n",
+        "outputs": 2,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 730,
+        "y": 400,
+        "wires": [
+            [
+                "987e4163e6b9a981"
+            ],
+            [
+                "e583d7e485f4ae8c"
+            ]
+        ]
+    },
+    {
+        "id": "d2b51d8dc5812b38",
+        "type": "function",
+        "z": "a1b2c3d4.56789",
+        "name": "Обработка входящих сообщений",
+        "func": "try {\n    // Базовые проверки\n    if (!msg.originalMessage || !msg.payload) {\n        throw new Error(\"Неверная структура сообщения\");\n    }\n\n    // Формируем объект с информацией\n    const full_info = {\n        user_tag: msg.originalMessage.from.username,\n        content: msg.payload.content.trim(),\n        date: msg.payload.date || new Date().toISOString(),\n        chatId: msg.originalMessage.chat.id\n    };\n\n    msg.userTag = msg.originalMessage.from.username;\n\n    // Обработка состояния ожидания номера машины\n    const waitingKey = `waiting_car_${full_info.chatId}`;\n    if (flow.get(waitingKey)) {\n        flow.set(waitingKey, false); // Сбрасываем флаг\n\n        // Проверка минимальной длины номера\n        if (full_info.content.length < 3) {\n            return {\n                payload: {\n                    chatId: full_info.chatId,\n                    type: \"message\",\n                    content: \"❌ Номер/VIN слишком короткий\",\n                    replyMarkup: { remove_keyboard: true }\n                }\n            };\n        }\n\n        return [null, {\n            payload: {\n                ...full_info,\n                action: \"create_car_project\",\n                car_number: full_info.content\n            }\n        }];\n    }\n\n    // Обработка команд\n    switch (full_info.content.toLowerCase()) {\n        case '/start':\n            flow.set(waitingKey, true);\n            return {\n                payload: {\n                    chatId: full_info.chatId,\n                    type: \"message\",\n                    content: \"🚗 Введите VIN или номер машины:\",\n                    replyMarkup: { remove_keyboard: true }\n                }\n            };\n\n        case 'подтвердить':\n            return [null, {\n                payload: {\n                    ...full_info,\n                    action: \"confirm_works\"\n                }\n            }];\n            \n        case '/итог':\n        case 'итог':\n            return [null, {\n                payload: {\n                    ...full_info,\n                    action: \"calculate_hours\"\n                }\n            }];\n        case '/reg':\n            return [null, {\n                payload: {\n                    ...full_info,\n                    action: \"register_worker\"\n                }\n            }];\n\n        default:\n            // Все остальное считаем работой\n            return [null, {\n                payload: {\n                    ...full_info,\n                    action: \"add_work\",\n                    service_name: full_info.content\n                }\n            }];\n    }\n} catch (error) {\n    console.error(\"Ошибка обработки:\", error);\n    return {\n        payload: {\n            chatId: msg.originalMessage?.chat?.id,\n            type: \"message\",\n            content: \"⚠️ Ошибка обработки запроса\"\n        }\n    };\n}",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 430,
+        "y": 120,
+        "wires": [
+            [
+                "596314b0094cb77a"
+            ],
+            [
+                "1a8f14b172c279e4",
+                "1a91a4ac3a8ae991",
+                "8db7171cc9746c93",
+                "2d248485fc28283a",
+                "da9d42737b680856"
+            ]
+        ]
+    },
+    {
+        "id": "e583d7e485f4ae8c",
+        "type": "http request",
+        "z": "a1b2c3d4.56789",
+        "name": "",
+        "method": "POST",
+        "ret": "txt",
+        "paytoqs": "ignore",
+        "url": "http://strapi:1337/car-projects",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 970,
+        "y": 440,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "9d21d401f365d591",
+        "type": "comment",
+        "z": "a1b2c3d4.56789",
+        "name": "",
+        "info": "let full_info = {\n    \"user_tag\": msg.originalMessage.from.username,\n    \"content\": msg.payload.content,\n    \"date\": msg.payload.date,\n    \"chatId\": msg.originalMessage.chat.id,\n};\n\n// Проверяем, ожидаем ли мы номер машины после /start\nconst waitingForCarNumber = flow.get(`waiting_car_${full_info.chatId}`) || false;\n\nif (waitingForCarNumber) {\n    // Сбрасываем флаг ожидания\n    flow.set(`waiting_car_${full_info.chatId}`, false);\n    \n    // Создаем новый car_project\n    return [null, {\n        payload: {\n            ...full_info,\n            action: \"create_car_project\",\n            car_number: full_info.content\n        }\n    }];\n}\n\n// Проверяем команды только если не ожидаем номер машины\nif (!waitingForCarNumber) {\n    switch (full_info.content.toLowerCase()) {\n        case '/start':\n            flow.set(`waiting_car_${full_info.chatId}`, true);\n            return {\n                payload: {\n                    chatId: full_info.chatId,\n                    type: \"message\",\n                    content: \"🚗 Введите VIN или номер машины:\",\n                    replyMarkup: { remove_keyboard: true }\n                }\n            };\n\n        case 'подтвердить':\n            if (flow.get(\"mechanic_messages\") && flow.get(\"mechanic_messages\").length > 0) {\n                return [null, { payload: full_info }];\n            } else {\n                return {\n                    payload: {\n                        chatId: full_info.chatId,\n                        type: \"message\",\n                        content: \"❌ Нет работ для подтверждения\",\n                        replyMarkup: { remove_keyboard: true }\n                    }\n                };\n            }\n    }\n}\n\n// Все что не команда и не номер после /start - считаем работой\nreturn [null, {\n    payload: {\n        ...full_info,\n        action: \"add_work\",\n        service_name: full_info.content\n    }\n}];",
+        "x": 390,
+        "y": 180,
+        "wires": []
+    },
+    {
+        "id": "5b7b8c47bd4b2a4c",
+        "type": "function",
+        "z": "a1b2c3d4.56789",
+        "name": "Подготовка запроса к Yandex GPT",
+        "func": "let IAM = flow.get('settings').IAM;\nconst carProjectId = msg.carProjectId; // Получаем из предыдущего узла\n\n    // Формируем тело запроса для Yandex GPT API\nmsg.payload = {\n    \"modelUri\": `gpt://${env.get('YANDEX_GPT_FOLDER_ID_2') || 'b1goqv6uhnf7i2fqof2p'}/yandexgpt`,\n    \"completionOptions\": {\n        \"stream\": false,\n        \"temperature\": 0.3,\n        \"maxTokens\": \"2000\",\n        \"reasoningOptions\": {\n            \"mode\": \"DISABLED\"\n        }\n    },\n    \"messages\": [\n        {\n            \"role\": \"system\",\n            \"text\": \"Ты помощник автосервиса. Анализируй текст сообщений и преобразуй их в структурированные данные для записи в таблицу.\\n\" +\n                \"Таблица имеет следующие поля: name (услуга), status, completionDate, totalTime (в часах), totalCost (в рублях), car_project (связь с авто).\\n\" +\n                \"Правила обработки:\\n\" +\n                \"1. Извлекай название услуги из текста\\n\" +\n                \"2. Если время не указано - используй 0.5 часа\\n\" +\n                \"3. Статус по умолчанию: 'В работе'\\n\" +\n                \"4. Дату completionDate оставляй пустой (null)\\n\" +\n                \"5. Все числовые значения указывай без единиц измерения (только цифры)\\n\\n\" +\n                \"Отвечай строго в JSON формате:\\n\" +\n                \"{\\n\" +\n                \"  \\\"records\\\": [\\n\" +\n                \"    {\\n\" +\n                \"      \\\"name\\\": string,\\n\" +\n                \"      \\\"status\\\": string,\\n\" +\n                \"      \\\"completionDate\\\": null,\\n\" +\n                \"      \\\"totalTime\\\": number,\\n\" +\n                \"      \\\"totalCost\\\": number,\\n\" +\n                \"      \\\"car_project\\\": \\\"\" + carProjectId + \"\\\"\\n\" + \n                \"    }\\n\" +\n                \"  ]\\n\" +\n                \"}\"\n        },\n        {\n            \"role\": \"user\",\n            \"text\": \"Работ:\\n\" + msg.originalContent\n        }\n    ]\n};\n\nmsg.headers = {\n    \"Content-Type\": \"application/json\",\n    \"Authorization\": `Bearer ${IAM}`\n};\n\n\nreturn msg",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 380,
+        "y": 880,
+        "wires": [
+            [
+                "452618b20265856e"
+            ]
+        ]
+    },
+    {
+        "id": "452618b20265856e",
+        "type": "http request",
+        "z": "a1b2c3d4.56789",
+        "name": "Запрос к Yandex GPT API",
+        "method": "POST",
+        "ret": "json",
+        "paytoqs": "ignore",
+        "url": "https://llm.api.cloud.yandex.net/foundationModels/v1/completion",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 660,
+        "y": 880,
+        "wires": [
+            [
+                "1a2970861e1aa5da"
+            ]
+        ]
+    },
+    {
+        "id": "e0ec1405923b80f5",
+        "type": "inject",
+        "z": "a1b2c3d4.56789",
+        "name": "",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 100,
+        "y": 860,
+        "wires": [
+            [
+                "5b7b8c47bd4b2a4c"
+            ]
+        ]
+    },
+    {
+        "id": "1a2970861e1aa5da",
+        "type": "debug",
+        "z": "a1b2c3d4.56789",
+        "name": "debug 1",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 910,
+        "y": 880,
+        "wires": []
+    },
+    {
+        "id": "1a91a4ac3a8ae991",
+        "type": "function",
+        "z": "a1b2c3d4.56789",
+        "name": "Подтверждение работ",
+        "func": "if (msg.payload.action === \"confirm_works\") {\n    const chatId = msg.payload.chatId;\n\n    if (!chatId) {\n        node.error(\"Отсутствует chatId\", msg);\n        return null;\n    }\n\n    // Сохраняем chatId в сообщении\n    msg.originalChatId = chatId;\n\n    return {\n        method: \"GET\",\n        url: `http://strapi:1337/car-projects?chat_id=${chatId}&status=active&_sort=date_start:desc&_limit=1`,\n        headers: {\n            \"Authorization\": `Bearer ${flow.get('settings').STRAPI_JWT_SECRET}`\n        },\n        originalChatId: chatId  // Дублируем chatId здесь\n    };\n}",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 550,
+        "y": 520,
+        "wires": [
+            [
+                "02357cca71f74a2f"
+            ]
+        ]
+    },
+    {
+        "id": "02357cca71f74a2f",
+        "type": "http request",
+        "z": "a1b2c3d4.56789",
+        "name": "Запрос проекта",
+        "method": "use",
+        "ret": "obj",
+        "paytoqs": "ignore",
+        "url": "",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 780,
+        "y": 520,
+        "wires": [
+            [
+                "0bb70c20507b47e9"
+            ]
+        ]
+    },
+    {
+        "id": "0bb70c20507b47e9",
+        "type": "function",
+        "z": "a1b2c3d4.56789",
+        "name": "Обработка ответа",
+        "func": "// Преобразуем строку в объект если нужно\nlet project = msg.payload;\nif (typeof project === 'string') {\n    try {\n        project = JSON.parse(project);\n    } catch (e) {\n        node.error(\"Ошибка парсинга JSON\", msg);\n        return null;\n    }\n}\n\n// Если получили массив (при первом запросе), берем первый элемент\nif (Array.isArray(project)) {\n    project = project[0];\n}\n\nif (project && project.id) {\n    // Сохраняем ID проекта для этого чата\n    flow.set(`project_id_${msg.originalChatId}`, project.id);\n    \n    const worksCount = project.works ? project.works.length : 0;\n    \n    // Формируем сообщение для пользователя\n    const userMsg = {\n        payload: {\n            chatId: msg.originalChatId,\n            type: \"message\",\n            content: worksCount > 0 \n                ? `✅ Подтверждено ${worksCount} работ. Закрываю проект...`\n                : \"✅ Закрываю проект...\"\n        }\n    };\n    \n    // Формируем запрос на обновление\n    const updateMsg = {\n        method: \"PUT\",\n        url: `http://strapi:1337/car-projects/${project.id}`,\n        headers: {\n            \"Authorization\": `Bearer ${flow.get('settings').STRAPI_JWT_SECRET}`,\n            \"Content-Type\": \"application/json\"\n        },\n        payload: {\n            status: \"completed\",\n            date_end: new Date().toISOString()\n        },\n        originalChatId: msg.originalChatId\n    };\n    \n    return [userMsg, updateMsg];\n} else {\n    return {\n        payload: {\n            chatId: msg.originalChatId,\n            type: \"message\",\n            content: \"❌ Не найден активный проект для подтверждения\"\n        }\n    };\n}",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 970,
+        "y": 480,
+        "wires": [
+            [
+                "7716908ded226f10"
+            ],
+            [
+                "02d858965219a0a2"
+            ]
+        ]
+    },
+    {
+        "id": "02d858965219a0a2",
+        "type": "http request",
+        "z": "a1b2c3d4.56789",
+        "name": "Обновление проекта",
+        "method": "use",
+        "ret": "obj",
+        "paytoqs": "ignore",
+        "url": "",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 1140,
+        "y": 540,
+        "wires": [
+            [
+                "95fc79f7f1a8e050"
+            ]
+        ]
+    },
+    {
+        "id": "7716908ded226f10",
+        "type": "telegram sender",
+        "z": "a1b2c3d4.56789",
+        "name": "",
+        "bot": "12345678.90abcd",
+        "haserroroutput": false,
+        "outputs": 1,
+        "x": 1470,
+        "y": 460,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "95fc79f7f1a8e050",
+        "type": "function",
+        "z": "a1b2c3d4.56789",
+        "name": "Проверка обновления",
+        "func": "// Обработка ответа от Strapi\nif (!msg.originalChatId) {\n    node.error(\"Отсутствует originalChatId в проверке обновления\", msg);\n    return null;\n}\n\n\nif (msg.statusCode === 200) {\n    // Удаляем сохраненный ID проекта после успешного завершения\n    return {\n        payload: {\n            chatId: msg.originalChatId,\n            type: \"message\",\n            content: \"✅ Проект успешно завершён!\"\n        }\n    };\n} else {\n    return {\n        payload: {\n            chatId: msg.originalChatId,\n            type: \"message\",\n            content: \"⚠️ Не удалось завершить проект. Попробуйте позже.\"\n        }\n    };\n}",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1350,
+        "y": 620,
+        "wires": [
+            [
+                "7716908ded226f10"
+            ]
+        ]
+    },
+    {
+        "id": "3e333125569567d5",
+        "type": "function",
+        "z": "a1b2c3d4.56789",
+        "name": "Ищем CarID",
+        "func": "if (msg.payload.action === \"add_work\") {\n    const chatId = msg.payload.chatId;\n\n    // Сохраняем важные данные перед перезаписью payload\n    msg.originalChatId = msg.payload.chatId;\n    msg.originalContent = msg.payload.content;\n\n    msg.method = \"GET\";\n    msg.url = `http://strapi:1337/car-projects?_sort=date_start:desc&chat_id=${chatId}`;\n    msg.headers = {\n        \"Authorization\": `Bearer ${flow.get('settings').STRAPI_JWT_SECRET}`\n    };\n\n    return msg;\n}",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 990,
+        "y": 220,
+        "wires": [
+            [
+                "a4433a5c16a1cb0f"
+            ]
+        ]
+    },
+    {
+        "id": "a4433a5c16a1cb0f",
+        "type": "http request",
+        "z": "a1b2c3d4.56789",
+        "name": "car-project",
+        "method": "use",
+        "ret": "txt",
+        "paytoqs": "ignore",
+        "url": "",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 1170,
+        "y": 220,
+        "wires": [
+            [
+                "ed63f0ce7b181f00"
+            ]
+        ]
+    },
+    {
+        "id": "ed63f0ce7b181f00",
+        "type": "function",
+        "z": "a1b2c3d4.56789",
+        "name": "Процесс поиска",
+        "func": "const responseData = typeof msg.payload === 'string' \n        ? JSON.parse(msg.payload) \n        : msg.payload;\n    \n    // 2. Получаем массив проектов\n    const projects = Array.isArray(responseData) \n        ? responseData \n        : responseData.data || [];\n\nif (projects.length === 0) {\n    return {\n        payload: {\n            chatId: msg.originalChatId || msg.chatId, // Используем сохраненный chatId\n            type: \"message\",\n            content: \"❌ Не найден активный проект. Сначала создайте проект с помощью /start\",\n            replyMarkup: { remove_keyboard: true }\n        }\n    };\n}\n\n// Выбираем самый свежий проект (сортировка уже сделана в запросе)\nconst activeProject = projects.find(p => p.status === \"active\") || projects[0];\n\n// Передаем данные дальше\nmsg.carProjectId = activeProject.id;\nmsg.chatId = msg.originalChatId; \n\nmsg.payload.content = msg.originalContent; \n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1370,
+        "y": 220,
+        "wires": [
+            [
+                "c92038fa62531256"
+            ]
+        ]
+    },
+    {
+        "id": "c92038fa62531256",
+        "type": "function",
+        "z": "a1b2c3d4.56789",
+        "name": "Подготовка запроса к Yandex GPT",
+        "func": "let IAM = flow.get('settings').IAM;\nconst carProjectId = msg.carProjectId; // Получаем из предыдущего узла\nif (msg.workerId) {\n    msg.payload.workers = [msg.workerId]; // Явная привязка работника\n}\n    // Формируем тело запроса для Yandex GPT API\nmsg.payload = {\n    \"modelUri\": `gpt://${env.get('YANDEX_GPT_FOLDER_ID_2') || 'b1goqv6uhnf7i2fqof2p'}/yandexgpt`,\n    \"completionOptions\": {\n        \"stream\": false,\n        \"temperature\": 0.3,\n        \"maxTokens\": \"2000\",\n        \"reasoningOptions\": {\n            \"mode\": \"DISABLED\"\n        }\n    },\n    \"messages\": [\n        {\n            \"role\": \"system\",\n            \"text\": \"Ты помощник автосервиса. Анализируй текст сообщений и преобразуй их в структурированные данные для записи в таблицу.\\n\" +\n                \"Таблица имеет следующие поля: name (услуга), status, completionDate, totalTime (в часах), totalCost (в рублях), car_project (связь с авто).\\n\" +\n                \"Правила обработки:\\n\" +\n                \"1. Извлекай название услуги из текста\\n\" +\n                \"2. Если время не указано - используй 0.5 часа\\n\" +\n                \"3. Статус по умолчанию: 'В работе'\\n\" +\n                \"4. Дату completionDate оставляй пустой (null)\\n\" +\n                \"5. Все числовые значения указывай без единиц измерения (только цифры)\\n\\n\" +\n                \"Отвечай строго в JSON формате:\\n\" +\n                \"{\\n\" +\n                \"  \\\"records\\\": [\\n\" +\n                \"    {\\n\" +\n                \"      \\\"name\\\": string,\\n\" +\n                \"      \\\"status\\\": string,\\n\" +\n                \"      \\\"completionDate\\\": null,\\n\" +\n                \"      \\\"totalTime\\\": number,\\n\" +\n                \"      \\\"totalCost\\\": number,\\n\" +\n                \"      \\\"car_project\\\": \\\"\" + carProjectId + \"\\\"\\n\" + \n                \"    }\\n\" +\n                \"  ]\\n\" +\n                \"}\"\n        },\n        {\n            \"role\": \"user\",\n            \"text\": \"Работ:\\n\" + msg.originalContent\n        }\n    ]\n};\n\nmsg.headers = {\n    \"Content-Type\": \"application/json\",\n    \"Authorization\": `Bearer ${IAM}`\n};\n\n\nreturn msg",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1080,
+        "y": 280,
+        "wires": [
+            [
+                "729da624d917a9b0"
+            ]
+        ]
+    },
+    {
+        "id": "729da624d917a9b0",
+        "type": "http request",
+        "z": "a1b2c3d4.56789",
+        "name": "Запрос к Yandex GPT API",
+        "method": "POST",
+        "ret": "json",
+        "paytoqs": "ignore",
+        "url": "https://llm.api.cloud.yandex.net/foundationModels/v1/completion",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 1360,
+        "y": 280,
+        "wires": [
+            [
+                "5f4a707b3ca998f5"
+            ]
+        ]
+    },
+    {
+        "id": "5f4a707b3ca998f5",
+        "type": "function",
+        "z": "a1b2c3d4.56789",
+        "name": "function 1",
+        "func": "if (msg.payload.error) {\n    node.error(\"Yandex GPT API error: \" + msg.payload.message, msg);\n    msg.payload = {\n        chatId: msg.chatId,\n        type: \"message\",\n        content: \"❌ Ошибка нейросети: \" + msg.payload.message,\n        replyMarkup: { remove_keyboard: true }\n    };\n    return msg;\n}\n\ntry {\n    const STRAPI_JWT_SECRET = flow.get('settings').STRAPI_JWT_SECRET;\n    const response = typeof msg.payload === 'string'\n        ? JSON.parse(msg.payload)\n        : msg.payload;\n\n    // Извлекаем и очищаем ответ нейросети\n    const gptText = response.result?.alternatives?.[0]?.message?.text?.replace(/```/g, '').trim();\n    if (!gptText) throw new Error(\"Некорректный ответ нейросети\");\n\n    // Парсим JSON\n    const gptData = JSON.parse(gptText);\n    const record = gptData.records?.[0];\n    if (!record) throw new Error(\"Не найдены данные о работе\");\n\n    if (msg.workerId) {\n        msg.payload.workers = [msg.workerId]; // Добавляем работника к работе\n    }\n    // Формируем payload\n    msg.payload = {\n        name: record.name || \"Неизвестная услуга\",\n        status: record.status || \"Завершена\",\n        completionDate: null,\n        totalTime: Number(record.totalTime) || 0.5,\n        totalCost: Number(record.totalCost) || 500,\n        car_project: msg.carProjectId\n    };\n\n    // Устанавливаем headers\n    msg.headers = {\n        \"Content-Type\": \"application/json\",\n        \"Authorization\": `Bearer ${STRAPI_JWT_SECRET}`\n    };\n\n    // Сохраняем важные поля\n    msg.chatId = msg.chatId || msg.originalChatId;\n    msg.originalContent = msg.originalContent;\n    msg.workName = msg.payload.name;\n    return msg;\n\n} catch (err) {\n    node.error(\"Ошибка обработки: \" + err.message, msg);\n    msg.payload = {\n        chatId: msg.chatId,\n        type: \"message\",\n        content: `❌ Ошибка: ${err.message}\\n\\nПример формата: \"Замена масла - 3000 - 1\"`,\n        replyMarkup: { remove_keyboard: true }\n    };\n    return msg;\n}",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1000,
+        "y": 340,
+        "wires": [
+            [
+                "3b9a3bce79fe3c06"
+            ]
+        ]
+    },
+    {
+        "id": "3b9a3bce79fe3c06",
+        "type": "http request",
+        "z": "a1b2c3d4.56789",
+        "name": "works",
+        "method": "POST",
+        "ret": "txt",
+        "paytoqs": "ignore",
+        "url": "http://strapi:1337/works",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 1150,
+        "y": 340,
+        "wires": [
+            [
+                "0aa673230b4a1fb9"
+            ]
+        ]
+    },
+    {
+        "id": "0aa673230b4a1fb9",
+        "type": "function",
+        "z": "a1b2c3d4.56789",
+        "name": "function 2",
+        "func": "if (msg.statusCode === 200) {\n    const workId = typeof msg.payload === 'string'\n        ? JSON.parse(msg.payload).id\n        : msg.payload.id;\n\n    // Если работа создана успешно, возвращаем два сообщения\n    return [{\n        payload: {\n            chatId: msg.chatId || msg.originalChatId,\n            type: \"message\",\n            content: `✅ Работа \"${msg.workName}\" успешно добавлена`,\n            replyMarkup: { remove_keyboard: true }\n        }\n    }, {\n        method: \"PUT\",\n        url: `http://strapi:1337/works/${workId}`,\n        headers: {\n            \"Content-Type\": \"application/json\",\n            \"Authorization\": `Bearer ${flow.get('settings').STRAPI_JWT_SECRET}`\n        },\n        payload: {\n            workers: [msg.workerId] // Явно добавляем работника\n        },\n        originalChatId: msg.chatId,\n        workName: msg.workName\n    }];\n} else {\n    return {\n        payload: {\n            chatId: msg.chatId,\n            type: \"message\",\n            content: \"❌ Ошибка при добавлении работы\",\n            replyMarkup: { remove_keyboard: true }\n        }\n    };\n}",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1340,
+        "y": 340,
+        "wires": [
+            [
+                "86edbbc35a5cba8c"
+            ],
+            [
+                "new_put_request_node"
+            ]
+        ]
+    },
+    {
+        "id": "86edbbc35a5cba8c",
+        "type": "telegram sender",
+        "z": "a1b2c3d4.56789",
+        "name": "",
+        "bot": "12345678.90abcd",
+        "haserroroutput": false,
+        "outputs": 1,
+        "x": 1610,
+        "y": 320,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "8db7171cc9746c93",
+        "type": "function",
+        "z": "a1b2c3d4.56789",
+        "name": "Проверка регистрации",
+        "func": "if (msg.payload.action === \"add_work\") {\n    const userTag = msg.payload.user_tag;\n    const chatId = msg.payload.chatId;\n\n    if (!userTag) {\n        return {\n            payload: {\n                chatId: chatId,\n                type: \"message\",\n                content: \"❌ Не удалось определить ваш user_tag\",\n                replyMarkup: { remove_keyboard: true }\n            }\n        };\n    }\n\n    // Сохраняем оригинальные данные\n    msg._original = {\n        content: msg.payload.content,\n        chatId: chatId,\n        userTag: userTag\n    };\n\n    // Запрос информации о работнике\n    msg.method = \"GET\";\n    msg.url = `http://strapi:1337/workers?user_tag=${userTag}&_limit=1`;\n    msg.headers = {\n        \"Authorization\": `Bearer ${flow.get('settings').STRAPI_JWT_SECRET}`\n    };\n\n    return msg;\n}",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 750,
+        "y": 180,
+        "wires": [
+            [
+                "8875926353c5f43e"
+            ]
+        ]
+    },
+    {
+        "id": "8875926353c5f43e",
+        "type": "http request",
+        "z": "a1b2c3d4.56789",
+        "name": "Проверка регистрации",
+        "method": "use",
+        "ret": "txt",
+        "paytoqs": "ignore",
+        "url": "",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 990,
+        "y": 180,
+        "wires": [
+            [
+                "9a2f43b17ed00e9d"
+            ]
+        ]
+    },
+    {
+        "id": "9a2f43b17ed00e9d",
+        "type": "function",
+        "z": "a1b2c3d4.56789",
+        "name": "Обработка проверки",
+        "func": "const response = typeof msg.payload === 'string'\n    ? JSON.parse(msg.payload)\n    : msg.payload;\n\n// Выход 2 (ошибка): если работник не найден\nif (!Array.isArray(response) || response.length === 0) {\n    return [null, {\n        payload: {\n            chatId: msg._original.chatId,\n            type: \"message\",\n            content: \"⚠️ Сначала зарегистрируйтесь через /reg\",\n            replyMarkup: { remove_keyboard: true }\n        }\n    }];\n}\n\n// Выход 1: основной поток\nreturn [{\n    ...msg,\n    payload: {\n        action: \"add_work\",\n        chatId: msg._original.chatId,\n        content: msg._original.content,\n        user_tag: msg._original.userTag\n    },\n    workerId: response[0].id\n}, null];",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 770,
+        "y": 240,
+        "wires": [
+            [
+                "3e333125569567d5"
+            ],
+            [
+                "21f83d2164b3c59b"
+            ]
+        ]
+    },
+    {
+        "id": "21f83d2164b3c59b",
+        "type": "telegram sender",
+        "z": "a1b2c3d4.56789",
+        "name": "",
+        "bot": "12345678.90abcd",
+        "haserroroutput": false,
+        "outputs": 1,
+        "x": 770,
+        "y": 300,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "new_put_request_node",
+        "type": "http request",
+        "z": "a1b2c3d4.56789",
+        "name": "Привязка работника к работе",
+        "method": "use",
+        "ret": "txt",
+        "paytoqs": "ignore",
+        "url": "",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 1310,
+        "y": 400,
+        "wires": [
+            [
+                "new_response_handler"
+            ]
+        ]
+    },
+    {
+        "id": "new_response_handler",
+        "type": "function",
+        "z": "a1b2c3d4.56789",
+        "name": "Обработка привязки работника",
+        "func": "if (msg.statusCode === 200) {\n    node.log(`Работник успешно привязан к работе: ${msg.workName}`);\n} else {\n    node.error(`Ошибка привязки работника: ${msg.payload}`);\n    return {\n        payload: {\n            chatId: msg.originalChatId,\n            type: \"message\",\n            content: \"⚠️ Работа добавлена, но не привязана к работнику\"\n        }\n    };\n}\n\nreturn null;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1600,
+        "y": 400,
+        "wires": [
+            [
+                "9f9daa0c1b381f5e"
+            ]
+        ]
+    },
+    {
+        "id": "9f9daa0c1b381f5e",
+        "type": "telegram sender",
+        "z": "a1b2c3d4.56789",
+        "name": "",
+        "bot": "12345678.90abcd",
+        "haserroroutput": false,
+        "outputs": 1,
+        "x": 1850,
+        "y": 400,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "2d248485fc28283a",
+        "type": "function",
+        "z": "a1b2c3d4.56789",
+        "name": "Регистрация работника",
+        "func": "if (msg.payload.action === \"register_worker\") {\n    const userTag = msg.payload.user_tag;\n    const chatId = msg.payload.chatId;\n\n    if (!userTag) {\n        return {\n            payload: {\n                chatId: chatId,\n                type: \"message\",\n                content: \"❌ Не удалось определить ваш user_tag\"\n            }\n        };\n    }\n\n    // Сначала проверяем существование работника\n    return {\n        method: \"GET\",\n        url: `http://strapi:1337/workers?user_tag=${userTag}`,\n        headers: {\n            \"Authorization\": `Bearer ${flow.get('settings').STRAPI_JWT_SECRET}`\n        },\n        originalChatId: chatId,\n        userTag: userTag\n    };\n}",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 750,
+        "y": 120,
+        "wires": [
+            [
+                "cc02e5a75c6e9b19"
+            ]
+        ]
+    },
+    {
+        "id": "cc02e5a75c6e9b19",
+        "type": "http request",
+        "z": "a1b2c3d4.56789",
+        "name": "Проверка работника",
+        "method": "use",
+        "ret": "txt",
+        "paytoqs": "ignore",
+        "url": "",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 990,
+        "y": 120,
+        "wires": [
+            [
+                "848516deb6144e9c"
+            ]
+        ]
+    },
+    {
+        "id": "848516deb6144e9c",
+        "type": "function",
+        "z": "a1b2c3d4.56789",
+        "name": "Обработка проверки",
+        "func": "const response = typeof msg.payload === 'string' ? JSON.parse(msg.payload) : msg.payload;\nconst chatId = msg.originalChatId;\nconst userTag = msg.userTag;\n\n// Если работник уже существует - выход 1\nif (Array.isArray(response) && response.length > 0) {\n    return [{\n        payload: {\n            chatId: chatId,\n            type: \"message\",\n            content: `ℹ️ Вы уже зарегистрированы (ID: ${response[0].id})`\n        }\n    }, null];\n}\n\n// Если работника нет - выход 2\nreturn [null, {\n    method: \"POST\",\n    url: \"http://strapi:1337/workers\",\n    headers: {\n        \"Authorization\": `Bearer ${flow.get('settings').STRAPI_JWT_SECRET}`,\n        \"Content-Type\": \"application/json\"\n    },\n    payload: {\n        user_tag: userTag,\n        hourly_rate: 0\n    },\n    originalChatId: chatId\n}];",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1220,
+        "y": 120,
+        "wires": [
+            [
+                "28787561733bbe87"
+            ],
+            [
+                "d41de4345a02df97"
+            ]
+        ]
+    },
+    {
+        "id": "d41de4345a02df97",
+        "type": "http request",
+        "z": "a1b2c3d4.56789",
+        "name": "Создание работника",
+        "method": "POST",
+        "ret": "txt",
+        "paytoqs": "ignore",
+        "url": "http://strapi:1337/workers",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 1460,
+        "y": 160,
+        "wires": [
+            [
+                "56b68511c9ce27db"
+            ]
+        ]
+    },
+    {
+        "id": "56b68511c9ce27db",
+        "type": "function",
+        "z": "a1b2c3d4.56789",
+        "name": "Результат регистрации",
+        "func": "const response = typeof msg.payload === 'string' ? JSON.parse(msg.payload) : msg.payload;\nconst chatId = msg.originalChatId;\n\nif (response.id) {\n    return {\n        payload: {\n            chatId: chatId,\n            type: \"message\",\n            content: `✅ Вы успешно зарегистрированы (ID: ${response.id})`\n        }\n    };\n} else {\n    return {\n        payload: {\n            chatId: chatId,\n            type: \"message\",\n            content: \"❌ Ошибка регистрации: \" + (response.message || JSON.stringify(response))\n        }\n    };\n}",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1710,
+        "y": 160,
+        "wires": [
+            [
+                "28787561733bbe87"
+            ]
+        ]
+    },
+    {
+        "id": "28787561733bbe87",
+        "type": "telegram sender",
+        "z": "a1b2c3d4.56789",
+        "name": "",
+        "bot": "12345678.90abcd",
+        "haserroroutput": false,
+        "outputs": 1,
+        "x": 1950,
+        "y": 120,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "34b2c4c0fa627bd7",
+        "type": "http request",
+        "z": "a1b2c3d4.56789",
+        "name": "Запрос проектов",
+        "method": "GET",
+        "ret": "txt",
+        "paytoqs": "ignore",
+        "url": "",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 630,
+        "y": 580,
+        "wires": [
+            [
+                "f7b4385e016dab57"
+            ]
+        ]
+    },
+    {
+        "id": "f7b4385e016dab57",
+        "type": "function",
+        "z": "a1b2c3d4.56789",
+        "name": "Обработка проектов",
+        "func": "try {\n    const projects = typeof msg.payload === 'string' \n        ? JSON.parse(msg.payload) \n        : msg.payload;\n    \n    const userTag = msg.userTag;\n    const chatId = msg.originalChatId;\n\n    if (!Array.isArray(projects) || projects.length === 0) {\n        return {\n            payload: {\n                chatId: chatId,\n                type: \"message\",\n                content: \"ℹ️ Не найдено проектов за последний месяц\"\n            }\n        };\n    }\n\n    // Получаем ID всех проектов\n    const projectIds = projects.map(p => p.id);\n    \n    // Теперь запрашиваем работы для этих проектов и указанного работника\n    return {\n        method: \"GET\",\n        url: `http://strapi:1337/works?` +\n            `workers.user_tag=${userTag}&` +\n            `car_project.id_in=${projectIds.join(',')}&` +\n            `_limit=1`,\n        headers: {\n            \"Authorization\": `Bearer ${flow.get('settings').STRAPI_JWT_SECRET}`\n        },\n        originalChatId: chatId,\n        userTag: userTag\n    };\n} catch (err) {\n    return {\n        payload: {\n            chatId: msg.originalChatId,\n            type: \"message\",\n            content: \"❌ Ошибка при получении данных: \" + err.message\n        }\n    };\n}",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 850,
+        "y": 620,
+        "wires": [
+            [
+                "79427b042710cf97"
+            ]
+        ]
+    },
+    {
+        "id": "79427b042710cf97",
+        "type": "http request",
+        "z": "a1b2c3d4.56789",
+        "name": "Запрос работ",
+        "method": "GET",
+        "ret": "txt",
+        "paytoqs": "ignore",
+        "url": "",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 1070,
+        "y": 620,
+        "wires": [
+            [
+                "9a16284633cacce3"
+            ]
+        ]
+    },
+    {
+        "id": "9a16284633cacce3",
+        "type": "function",
+        "z": "a1b2c3d4.56789",
+        "name": "Финальный подсчет часов",
+        "func": "try {\n    const works = typeof msg.payload === 'string' \n        ? JSON.parse(msg.payload) \n        : msg.payload;\n    \n    const chatId = msg.originalChatId;\n    const userTag = msg.userTag;\n    \n    if (!Array.isArray(works) || works.length === 0) {\n        return {\n            payload: {\n                chatId: chatId,\n                type: \"message\",\n                content: \"ℹ️ За последний месяц не найдено работ с вашим участием\"\n            }\n        };\n    }\n    \n    // Подсчитываем общее время и стоимость\n    let totalHours = 0;\n    let totalCost = 0;\n    \n    works.forEach(work => {\n        totalHours += work.totalTime || 0;\n        totalCost += work.totalCost || 0;\n    });\n    \n    // Формируем ответ\n    const responseText = `📊 Ваша статистика за последний месяц:\\n` +\n                       `• Выполнено работ: ${works.length}\\n` +\n                       `• Всего часов: ${totalHours.toFixed(1)}\\n` +\n                       `• Общая стоимость: ${totalCost.toFixed(2)} руб.`;\n    \n    return {\n        payload: {\n            chatId: chatId,\n            type: \"message\",\n            content: responseText\n        }\n    };\n} catch (err) {\n    return {\n        payload: {\n            chatId: msg.originalChatId,\n            type: \"message\",\n            content: \"❌ Ошибка при расчете статистики: \" + err.message\n        }\n    };\n}",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1120,
+        "y": 680,
+        "wires": [
+            [
+                "0c1bfde19c136ccc"
+            ]
+        ]
+    },
+    {
+        "id": "0c1bfde19c136ccc",
+        "type": "telegram sender",
+        "z": "a1b2c3d4.56789",
+        "name": "",
+        "bot": "12345678.90abcd",
+        "haserroroutput": false,
+        "outputs": 1,
+        "x": 1390,
+        "y": 720,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "da9d42737b680856",
+        "type": "function",
+        "z": "a1b2c3d4.56789",
+        "name": "Подсчет часов работ",
+        "func": "if (msg.payload.action === \"calculate_hours\") {\n    const userTag = msg.payload.user_tag || msg.userTag;\n    const chatId = msg.payload.chatId;\n\n    if (!userTag) {\n        return {\n            payload: {\n                chatId: chatId,\n                type: \"message\",\n                content: \"❌ Не удалось определить ваш пользовательский тег\"\n            }\n        };\n    }\n\n    // Добавляем расчет даты (месяц назад)\n    const oneMonthAgo = new Date();\n    oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);\n    const dateString = oneMonthAgo.toISOString();\n\n    // Сначала находим все проекты за период\n    return {\n        method: \"GET\",\n        url: `http://strapi:1337/car-projects?` +\n            `chat_id=${chatId}&` +\n            `date_start=${dateString}&` +\n            `_limit=1`,\n        headers: {\n            \"Authorization\": `Bearer ${flow.get('settings').STRAPI_JWT_SECRET}`\n        },\n        originalChatId: chatId,\n        userTag: userTag\n    };\n}",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 420,
+        "y": 580,
+        "wires": [
+            [
+                "34b2c4c0fa627bd7"
+            ]
+        ]
+    },
+    {
+        "id": "9ad6f7a23270f596",
+        "type": "function",
+        "z": "a1b2c3d4.56789",
+        "name": "Подсчет часов работ",
+        "func": "if (msg.payload.action === \"calculate_hours\") {\n    const userTag = msg.payload.user_tag || msg.userTag;\n    const chatId = msg.payload.chatId;\n\n    if (!userTag) {\n        return {\n            payload: {\n                chatId: chatId,\n                type: \"message\",\n                content: \"❌ Не удалось определить ваш пользовательский тег\"\n            }\n        };\n    }\n\n    // Сохраняем данные для последующих узлов\n    msg.originalChatId = chatId;\n    msg.userTag = userTag;\n    \n    // 1. Сначала находим работника\n    return {\n        method: \"GET\",\n        url: `http://strapi:1337/workers?user_tag=${userTag}&_limit=1`,\n        headers: {\n            \"Authorization\": `Bearer ${flow.get('settings').STRAPI_JWT_SECRET}`\n        },\n        originalChatId: chatId,\n        userTag: userTag\n    };\n}",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 380,
+        "y": 700,
+        "wires": [
+            [
+                "d2ea625fa8328d78"
+            ]
+        ]
+    },
+    {
+        "id": "d2ea625fa8328d78",
+        "type": "http request",
+        "z": "a1b2c3d4.56789",
+        "name": "Запрос работника",
+        "method": "GET",
+        "ret": "txt",
+        "paytoqs": "ignore",
+        "url": "",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 590,
+        "y": 700,
+        "wires": [
+            [
+                "ba526ff3f7e757a8"
+            ]
+        ]
+    },
+    {
+        "id": "ba526ff3f7e757a8",
+        "type": "function",
+        "z": "a1b2c3d4.56789",
+        "name": "Обработка работника",
+        "func": "try {\n    const worker = typeof msg.payload === 'string' \n        ? JSON.parse(msg.payload) \n        : msg.payload;\n    \n    const userTag = msg.userTag;\n    const chatId = msg.originalChatId;\n\n    if (!Array.isArray(worker) || worker.length === 0) {\n        return {\n            payload: {\n                chatId: chatId,\n                type: \"message\",\n                content: \"❌ Работник не найден. Сначала зарегистрируйтесь через /reg\"\n            }\n        };\n    }\n\n    // Сохраняем ID работника и его почасовую ставку\n    msg.workerId = worker[0].id;\n    msg.hourlyRate = worker[0].hourly_rate || 0;\n    \n    // 2. Находим активный проект для этого чата\n    return {\n        method: \"GET\",\n        url: `http://strapi:1337/car-projects?chat_id=${chatId}&status=active&_limit=1`,\n        headers: {\n            \"Authorization\": `Bearer ${flow.get('settings').STRAPI_JWT_SECRET}`\n        },\n        originalChatId: chatId,\n        workerId: msg.workerId,\n        hourlyRate: msg.hourlyRate\n    };\n} catch (err) {\n    return {\n        payload: {\n            chatId: msg.originalChatId,\n            type: \"message\",\n            content: \"❌ Ошибка при получении данных работника: \" + err.message\n        }\n    };\n}",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 810,
+        "y": 740,
+        "wires": [
+            [
+                "62409b1b04b165ef"
+            ]
+        ]
+    },
+    {
+        "id": "62409b1b04b165ef",
+        "type": "http request",
+        "z": "a1b2c3d4.56789",
+        "name": "Запрос проекта",
+        "method": "GET",
+        "ret": "txt",
+        "paytoqs": "ignore",
+        "url": "",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 1030,
+        "y": 740,
+        "wires": [
+            [
+                "6da1df1e454bb2e8"
+            ]
+        ]
+    },
+    {
+        "id": "6da1df1e454bb2e8",
+        "type": "function",
+        "z": "a1b2c3d4.56789",
+        "name": "Обработка проекта",
+        "func": "try {\n    const project = typeof msg.payload === 'string' \n        ? JSON.parse(msg.payload) \n        : msg.payload;\n    \n    const chatId = msg.originalChatId;\n    const workerId = msg.workerId;\n    const hourlyRate = msg.hourlyRate;\n    \n    if (!Array.isArray(project) || project.length === 0) {\n        return {\n            payload: {\n                chatId: chatId,\n                type: \"message\",\n                content: \"❌ Не найден активный проект для этого чата\"\n            }\n        };\n    }\n    \n    const projectId = project[0].id;\n    \n    // 3. Находим все работы для этого проекта и работника\n    return {\n        method: \"GET\",\n        url: `http://strapi:1337/works?` +\n            `car_project.id=${projectId}&` +\n            `workers.id=${workerId}&` +\n            `_limit=100`,\n        headers: {\n            \"Authorization\": `Bearer ${flow.get('settings').STRAPI_JWT_SECRET}`\n        },\n        originalChatId: chatId,\n        workerId: workerId,\n        hourlyRate: hourlyRate,\n        projectId: projectId\n    };\n} catch (err) {\n    return {\n        payload: {\n            chatId: msg.originalChatId,\n            type: \"message\",\n            content: \"❌ Ошибка при получении проекта: \" + err.message\n        }\n    };\n}",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1080,
+        "y": 800,
+        "wires": [
+            [
+                "a49f056791460a69"
+            ]
+        ]
+    },
+    {
+        "id": "a49f056791460a69",
+        "type": "function",
+        "z": "a1b2c3d4.56789",
+        "name": "Финальный подсчет",
+        "func": "try {\n    const works = typeof msg.payload === 'string' \n        ? JSON.parse(msg.payload) \n        : msg.payload;\n    \n    const chatId = msg.originalChatId;\n    const hourlyRate = msg.hourlyRate;\n    const projectId = msg.projectId;\n    \n    if (!Array.isArray(works) || works.length === 0) {\n        return {\n            payload: {\n                chatId: chatId,\n                type: \"message\",\n                content: \"ℹ️ Не найдено работ для этого проекта\"\n            }\n        };\n    }\n    \n    // Подсчитываем общее время и стоимость\n    let totalHours = 0;\n    let totalCost = 0;\n    \n    works.forEach(work => {\n        totalHours += work.totalTime || 0;\n        totalCost += work.totalCost || 0;\n    });\n    \n    // Рассчитываем зарплату работника\n    const salary = totalHours * hourlyRate;\n    \n    // Формируем ответ\n    const responseText = `📊 Итог по проекту:\\n` +\n                       `• Выполнено работ: ${works.length}\\n` +\n                       `• Всего часов: ${totalHours.toFixed(1)}\\n` +\n                       `• Общая стоимость: ${totalCost.toFixed(2)} руб.\\n` +\n                       `• Ваша зарплата: ${salary.toFixed(2)} руб.`;\n    \n    // 4. Закрываем проект\n    return [{\n        payload: {\n            chatId: chatId,\n            type: \"message\",\n            content: responseText\n        }\n    }, {\n        method: \"PUT\",\n        url: `http://strapi:1337/car-projects/${projectId}`,\n        headers: {\n            \"Authorization\": `Bearer ${flow.get('settings').STRAPI_JWT_SECRET}`,\n            \"Content-Type\": \"application/json\"\n        },\n        payload: {\n            status: \"completed\",\n            date_end: new Date().toISOString()\n        },\n        originalChatId: chatId\n    }, {\n        method: \"PUT\",\n        url: `http://strapi:1337/workers/${msg.workerId}`,\n        headers: {\n            \"Authorization\": `Bearer ${flow.get('settings').STRAPI_JWT_SECRET}`,\n            \"Content-Type\": \"application/json\"\n        },\n        payload: {\n            work_completed: works.length,\n            salary: salary\n        },\n        originalChatId: chatId\n    }];\n} catch (err) {\n    return {\n        payload: {\n            chatId: msg.originalChatId,\n            type: \"message\",\n            content: \"❌ Ошибка при расчете статистики: \" + err.message\n        }\n    };\n}",
+        "outputs": 3,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1350,
+        "y": 840,
+        "wires": [
+            [],
+            [],
+            [
+                "6e363c9512b0b0b8"
+            ]
+        ]
+    },
+    {
+        "id": "6e363c9512b0b0b8",
+        "type": "http request",
+        "z": "a1b2c3d4.56789",
+        "name": "Обновление данных работника",
+        "method": "PUT",
+        "ret": "txt",
+        "paytoqs": "ignore",
+        "url": "",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 1570,
+        "y": 900,
+        "wires": [
+            [
+                "9ab30fec2d908aa2"
+            ]
+        ]
+    },
+    {
+        "id": "9ab30fec2d908aa2",
+        "type": "function",
+        "z": "a1b2c3d4.56789",
+        "name": "Проверка обновления работника",
+        "func": "if (msg.statusCode === 200) {\n    node.log(\"Данные работника успешно обновлены\");\n} else {\n    node.error(\"Ошибка обновления данных работника: \" + msg.payload);\n    return {\n        payload: {\n            chatId: msg.originalChatId,\n            type: \"message\",\n            content: \"⚠️ Итог подсчитан, но не удалось обновить данные работника\"\n        }\n    };\n}\n\nreturn null;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1810,
+        "y": 900,
+        "wires": [
+            [
+                "3a2ade767fbdcad7"
+            ]
+        ]
+    },
+    {
+        "id": "3a2ade767fbdcad7",
+        "type": "telegram sender",
+        "z": "a1b2c3d4.56789",
+        "name": "",
+        "bot": "12345678.90abcd",
+        "haserroroutput": false,
+        "outputs": 1,
+        "x": 1870,
+        "y": 960,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "a1b2c3d4e5f6",
+        "type": "inject",
+        "z": "d1b2c3d4e5f67890",
+        "name": "Trigger Request",
+        "props": [],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "x": 150,
+        "y": 120,
+        "wires": [
+            [
+                "b1b2c3d4e5f6"
+            ]
+        ]
+    },
+    {
+        "id": "b1b2c3d4e5f6",
+        "type": "http request",
+        "z": "d1b2c3d4e5f67890",
+        "name": "Fetch Post #1",
+        "method": "GET",
+        "ret": "txt",
+        "paytoqs": "ignore",
+        "url": "https://jsonplaceholder.typicode.com/posts/1",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 350,
+        "y": 120,
+        "wires": [
+            [
+                "c1b2c3d4e5f6"
+            ]
+        ]
+    },
+    {
+        "id": "c1b2c3d4e5f6",
+        "type": "debug",
+        "z": "d1b2c3d4e5f67890",
+        "name": "Show Response",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 550,
+        "y": 120,
+        "wires": []
+    }
+]

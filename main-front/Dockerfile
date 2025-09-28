@@ -1,0 +1,47 @@
+# Build stage
+FROM node:22-alpine AS build
+
+WORKDIR /app
+
+ARG VITE_PORT
+ARG VITE_STRAPI_URL
+ARG VITE_ALLOWED_HOSTS
+ARG VITE_MAIN_FRONTEND_URL
+ARG VITE_ADMIN_FRONTEND_URL
+ARG VITE_IN_FRONTEND_URL
+ARG VITE_API_URL
+ARG VITE_SHARE_SALT
+
+ENV VITE_PORT=$VITE_PORT
+ENV VITE_STRAPI_URL=$VITE_STRAPI_URL
+ENV VITE_ALLOWED_HOSTS=$VITE_ALLOWED_HOSTS
+ENV VITE_MAIN_FRONTEND_URL=$VITE_MAIN_FRONTEND_URL
+ENV VITE_ADMIN_FRONTEND_URL=$VITE_ADMIN_FRONTEND_URL
+ENV VITE_IN_FRONTEND_URL=$VITE_IN_FRONTEND_URL
+ENV VITE_API_URL=$VITE_API_URL
+ENV VITE_SHARE_SALT=$VITE_SHARE_SALT
+
+COPY package*.json ./
+
+RUN npm ci
+
+COPY . .
+
+RUN npm run build
+
+# Production stage
+FROM node:22-alpine
+
+WORKDIR /app
+
+# Copy built files
+COPY --from=build /app/dist ./dist
+COPY --from=build /app/package*.json ./
+COPY --from=build /app/vite.config.js ./
+
+# Install all dependencies (vite preview needs dev dependencies)
+RUN npm ci
+
+EXPOSE $VITE_PORT
+
+CMD ["npm", "run", "serve"]
