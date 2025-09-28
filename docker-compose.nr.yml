@@ -1,0 +1,23 @@
+services:
+
+  nodered-dev:
+    image: nodered/node-red:latest
+    container_name: autoserv-nodered-dev
+    ports:
+      - "1880:1880"
+    volumes:
+      - ./node-red:/data
+    restart: unless-stopped
+    user: "1000:1000"
+    environment:
+      - YANDEX_PASSPORT_OAUTH_TOKEN=${YANDEX_PASSPORT_OAUTH_TOKEN:-y0__xDm9I6ZqveAAhjB3RMg0qCEmxQgOHf7QFuQebr2pqpNnK8YnAhNSA}
+      - YANDEX_GPT_FOLDER_ID=${YANDEX_GPT_FOLDER_ID:-b1g8mpm88mnpldq39crb}
+      - YANDEX_VISION_FOLDER_ID=${YANDEX_VISION_FOLDER_ID:-b1g8mpm88mnpldq39crb}
+      - YANDEX_GPT_FOLDER_ID_2=${YANDEX_GPT_FOLDER_ID_2:-b1goqv6uhnf7i2fqof2p}
+    networks:
+      - autoserv-net
+
+
+networks:
+  autoserv-net:
+    driver: bridge
